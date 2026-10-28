@@ -1,0 +1,50 @@
+"""
+Materia: Procesamiento de Datos (Big Data) - UNAD
+Tarea 3 / Tarea 4: Procesamiento de Datos en Batch con Apache Spark
+Descripción: Script en PySpark que realiza el análisis exploratorio de datos (EDA)
+del dataset "Sección de Usos del Portal de Datos Abiertos del Estado Colombiano".
+"""
+
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
+
+# 1. Iniciar la sesión de Apache Spark
+spark = SparkSession.builder \
+    .appName("AnalisisDatosAbiertosBatch") \
+    .getOrCreate()
+
+# Reducir el nivel de logs en la consola
+spark.sparkContext.setLogLevel("WARN")
+
+# 2. Ruta y lectura del archivo CSV desde el sistema local / HDFS
+archivo_csv = "Sección_de_Usos_del_Portal_de_Datos_Abiertos_del_Estado_Colombiano_20261025.csv"
+
+# Leer archivo manteniendo la primera fila como encabezado e infiriendo el tipo de dato de las columnas
+df = spark.read.format("csv") \
+    .option("header", "true") \
+    .option("inferSchema", "true") \
+    .load(archivo_csv)
+
+# 3. Conteo total de registros analizados
+print("=== TOTAL DE REGISTROS EN EL ARCHIVO ===")
+print(df.count())
+
+# 4. Muestra de las columnas principales seleccionadas
+print("\n=== MOSTRANDO COLUMNAS CLAVE DE LOS PRIMEROS PROYECTOS ===")
+df.select("Título", "Departamento", "Sector", "Impacto Social").show(5, truncate=30)
+
+# 5. Agrupación y filtrado: Top 5 Departamentos con más proyectos de datos abiertos
+print("\n=== TOP 5 DEPARTAMENTOS CON MÁS PROYECTOS ===")
+if "Departamento" in df.columns:
+    df.groupBy("Departamento") \
+      .count() \
+      .orderBy(F.col("count").desc()) \
+      .show(5, truncate=False)
+
+# 6. Agrupación y filtrado: Top 5 Sectores con más proyectos
+print("\n=== TOP 5 SECTORES CON MÁS PROYECTOS ===")
+if "Sector" in df.columns:
+    df.groupBy("Sector") \
+      .count() \
+      .orderBy(F.col("count").desc()) \
+      .show(5, truncate=False)
